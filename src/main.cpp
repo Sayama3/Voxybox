@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "library.hpp"
+#include "VoxymoreCore.hpp"
 
 int main() {
-    hello();
+    Sayama::VoxymoreCore::hello();
     return 0;
 }
