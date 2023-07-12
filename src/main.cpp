@@ -3,6 +3,6 @@
 #include "VoxymoreCore.hpp"
 
 int main() {
-    Sayama::VoxymoreCore::hello();
+    Voxymore::Core::hello();
     return 0;
 }
