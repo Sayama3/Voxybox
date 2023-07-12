@@ -1,21 +1,13 @@
-#include <iostream>
-
 #include "VoxymoreCore.hpp"
+#include <iostream>
 
 class Sandbox : public Voxymore::Core::Application{
 public:
-    Sandbox(){
-
-    }
-    ~Sandbox(){
-
-    }
+    Sandbox(){}
+    ~Sandbox(){}
 };
 
-int main() {
-//    Voxymore::Core::hello();
-//    return 0;
-    Sandbox* sandbox = new Sandbox();
-    sandbox->Run();
-    delete sandbox;
+Voxymore::Core::Application* Voxymore::Core::CreateApplication() {
+    std::cout << "Create Application" << std::endl;
+    return new Sandbox();
 }
