@@ -35,8 +35,8 @@
 *.spv
 
 #Builds
-[Bb]uild/
-[Bb]uilds/
+[Bb]uild*/
+[Bb]uilds*/
 cmake-build*/
 
 #vs cache

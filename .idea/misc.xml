@@ -11,6 +11,7 @@
     </libraryRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/build" />
+      <file path="$PROJECT_DIR$/build-bat" />
     </excludeRoots>
   </component>
 </project>
