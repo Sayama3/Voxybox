@@ -8,6 +8,6 @@ public:
 };
 
 Voxymore::Core::Application* Voxymore::Core::CreateApplication() {
-    std::cout << "Create Application" << std::endl;
+    VXM_INFO("Create Application");
     return new Sandbox();
 }
