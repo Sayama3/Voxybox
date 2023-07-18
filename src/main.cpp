@@ -3,7 +3,9 @@
 
 class Sandbox : public Voxymore::Core::Application{
 public:
-    Sandbox(){}
+    Sandbox(){
+        PushOverlay(new Voxymore::Core::ImGUILayer());
+    }
     ~Sandbox(){}
 };
 
