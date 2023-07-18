@@ -22,4 +22,4 @@ include_directories(include)
 add_subdirectory(src)
 
 target_link_libraries(Voxybox PUBLIC Voxymore::Core)
-target_precompile_headers(Voxybox REUSE_FROM Voxymore::Core)
+target_precompile_headers(Voxybox REUSE_FROM Core)
