@@ -35,7 +35,6 @@ public:
 class Sandbox : public Voxymore::Core::Application{
 public:
     inline Sandbox() : Voxymore::Core::Application() {
-        ImGui::SetCurrentContext(Application::Get().GetImGUILayer().GetContext());
         PushLayer(new ExampleLayer());
     }
     inline ~Sandbox(){}
