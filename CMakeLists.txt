@@ -22,6 +22,6 @@ include_directories(include)
 add_subdirectory(src)
 
 target_link_libraries(Voxybox PUBLIC Voxymore::Core)
-target_precompile_headers(Voxybox REUSE_FROM Core)
-set_target_properties(Voxybox PROPERTIES POSITION_INDEPENDENT_CODE ON)
+#target_precompile_headers(Voxybox REUSE_FROM Core)
+#set_target_properties(Voxybox PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

@@ -1,4 +1,4 @@
-#include "VoxymoreCore.hpp"
+#include "Voxymore/Voxymore.hpp"
 #include <iostream>
 
 class Sandbox : public Voxymore::Core::Application{
