@@ -20,6 +20,7 @@ private:
     glm::vec3 movement = {0,0,0};
 public:
     ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight(), 60.0f){
+        Voxymore::Core::Application::Get().GetWindow().SetCursorState(updateCamera ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
         const Voxymore::Core::Window& window = Voxymore::Core::Application::Get().GetWindow();
         m_Camera.SetSize(window.GetWidth(), window.GetHeight());
 
@@ -123,6 +124,7 @@ public:
         if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_ESCAPE && event.GetRepeatCount() == 0) {
             VXM_CORE_INFO("Press KEY ESCAPE.");
             updateCamera = !updateCamera;
+            Voxymore::Core::Application::Get().GetWindow().SetCursorState(updateCamera ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
             movement = {0,0,0};
             hasSetMouse = false;
         }
