@@ -5,46 +5,54 @@
 
 class ExampleLayer : public Voxymore::Core::Layer {
 private:
-	std::shared_ptr<Voxymore::Core::Shader> m_Shader;
-	std::shared_ptr<Voxymore::Core::VertexArray> m_VertexArray;
-	std::shared_ptr<Voxymore::Core::VertexBuffer> m_VertexBuffer;
-	std::shared_ptr<Voxymore::Core::IndexBuffer> m_IndexBuffer;
+    std::shared_ptr<Voxymore::Core::Shader> m_Shader;
+    std::shared_ptr<Voxymore::Core::VertexArray> m_VertexArray;
+    std::shared_ptr<Voxymore::Core::VertexBuffer> m_VertexBuffer;
+    std::shared_ptr<Voxymore::Core::IndexBuffer> m_IndexBuffer;
 
-	Voxymore::Core::PerspectiveCamera m_Camera;
+    Voxymore::Core::PerspectiveCamera m_Camera;
+private:
+    bool updateCamera = true;
+    bool hasSetMouse = false;
+    float mouseX, mouseY = -1;
+    float sensitivity = 1.0f;
+    float speed = 1.0f;
+    glm::vec3 movement = {0,0,0};
 public:
     ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight(), 60.0f){
-		const Voxymore::Core::Window& window = Voxymore::Core::Application::Get().GetWindow();
-		m_Camera.SetSize(window.GetWidth(), window.GetHeight());
-
-		m_VertexArray.reset(Voxymore::Core::VertexArray::Create());
-
-		float vertices [(3 * 3) + (3 * 3) + (3 * 4)] = {
-				-0.5f, -0.5f, 0.0f,    -0.5f, -0.5f, -0.5f,    -0.5f, -0.5f, -0.5f, 1.0f,
-				0.0f, 0.5f, 0.0f,       0.0f, 0.5f, 0.0f,       0.0f, 0.5f, 0.0f, 1.0f,
-				0.5f, -0.5f, 0.0f,      0.5f, -0.5f, 0.5f,      0.5f, -0.5f, 0.5f, 1.0f,
-		};
-		m_VertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(vertices), vertices));
-		Voxymore::Core::BufferLayout layout = {
-				{Voxymore::Core::ShaderDataType::Float3, "a_Position"},
-				{Voxymore::Core::ShaderDataType::Float3, "a_Normal"},
-				{Voxymore::Core::ShaderDataType::Float4, "a_Color"},
-		};
-		m_VertexBuffer->SetLayout(layout);
+        const Voxymore::Core::Window& window = Voxymore::Core::Application::Get().GetWindow();
+        m_Camera.SetSize(window.GetWidth(), window.GetHeight());
 
 
-		m_VertexArray->AddVertexBuffer(m_VertexBuffer);
+        m_VertexArray.reset(Voxymore::Core::VertexArray::Create());
 
-		uint32_t index[3] = {
-				0,
-				2,
-				1,
-		};
+        float vertices [(3 * 3) + (3 * 3) + (3 * 4)] = {
+                -0.5f, -0.5f, 0.0f,    -0.5f, -0.5f, -0.5f,    -0.5f, -0.5f, -0.5f, 1.0f,
+                0.0f, 0.5f, 0.0f,       0.0f, 0.5f, 0.0f,       0.0f, 0.5f, 0.0f, 1.0f,
+                0.5f, -0.5f, 0.0f,      0.5f, -0.5f, 0.5f,      0.5f, -0.5f, 0.5f, 1.0f,
+        };
+        m_VertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(vertices), vertices));
+        Voxymore::Core::BufferLayout layout = {
+                {Voxymore::Core::ShaderDataType::Float3, "a_Position"},
+                {Voxymore::Core::ShaderDataType::Float3, "a_Normal"},
+                {Voxymore::Core::ShaderDataType::Float4, "a_Color"},
+        };
+        m_VertexBuffer->SetLayout(layout);
 
-		m_IndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(index), index));
 
-		m_VertexArray->SetIndexBuffer(m_IndexBuffer);
+        m_VertexArray->AddVertexBuffer(m_VertexBuffer);
 
-		std::string vertexSrc = R"(
+        uint32_t index[3] = {
+                0,
+                2,
+                1,
+        };
+
+        m_IndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(index), index));
+
+        m_VertexArray->SetIndexBuffer(m_IndexBuffer);
+
+        std::string vertexSrc = R"(
             #version 330 core
 
             layout(location = 0) in vec3 a_Position;
@@ -63,7 +71,7 @@ public:
             }
             )";
 
-		std::string fragmentSrc = R"(
+        std::string fragmentSrc = R"(
             #version 330 core
 
             layout(location = 0) out vec4 o_Color;
@@ -75,54 +83,172 @@ public:
                 o_Color = v_Color;
             }
         )";
-		m_Shader.reset(Voxymore::Core::Shader::CreateShader({vertexSrc, Voxymore::Core::ShaderType::VERTEX_SHADER}, {fragmentSrc, Voxymore::Core::ShaderType::FRAGMENT_SHADER}));
+        m_Shader.reset(Voxymore::Core::Shader::CreateShader({vertexSrc, Voxymore::Core::ShaderType::VERTEX_SHADER}, {fragmentSrc, Voxymore::Core::ShaderType::FRAGMENT_SHADER}));
 
-	}
+    }
 
-	bool UpdateCameraSize(Voxymore::Core::WindowResizeEvent& event) {
-		m_Camera.SetSize(event.GetWidth(), event.GetHeight());
-		return false;
-	}
+    bool UpdateCameraSize(Voxymore::Core::WindowResizeEvent& event) {
+        m_Camera.SetSize(event.GetWidth(), event.GetHeight());
+        return false;
+    }
 
-	virtual void OnUpdate() override {
-            Voxymore::Core::Renderer::BeginScene(m_Camera);
+    bool UpdateCameraPositionPressed(Voxymore::Core::KeyPressedEvent& event) {
+        if(updateCamera) {
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_W && event.GetRepeatCount() == 0) {
+                VXM_CORE_INFO("Press KEY W.");
+                movement += glm::vec3(0, 0, -1);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_S && event.GetRepeatCount() == 0) {
+                VXM_CORE_INFO("Press KEY S.");
+                movement += glm::vec3(0, 0, 1);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_D && event.GetRepeatCount() == 0) {
+                VXM_CORE_INFO("Press KEY D.");
+                movement += glm::vec3(1, 0, 0);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_A && event.GetRepeatCount() == 0) {
+                VXM_CORE_INFO("Press KEY A.");
+                movement += glm::vec3(-1, 0, 0);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_E && event.GetRepeatCount() == 0) {
+                VXM_CORE_INFO("Press KEY E.");
+                movement += glm::vec3(0, 1, 0);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_Q && event.GetRepeatCount() == 0) {
+                VXM_CORE_INFO("Press KEY Q.");
+                movement += glm::vec3(0, -1, 0);
+            }
+        }
 
-            Voxymore::Core::Renderer::Submit(m_Shader, m_VertexArray);
+        if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_ESCAPE && event.GetRepeatCount() == 0) {
+            VXM_CORE_INFO("Press KEY ESCAPE.");
+            updateCamera = !updateCamera;
+            movement = {0,0,0};
+            hasSetMouse = false;
+        }
+        return false;
+    }
 
-            Voxymore::Core::Renderer::EndScene();
-	}
+    bool UpdateCameraPositionReleased(Voxymore::Core::KeyReleasedEvent& event) {
+        if(updateCamera) {
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_W) {
+                VXM_CORE_INFO("Release KEY W.");
+                movement -= glm::vec3(0, 0, -1);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_S) {
+                VXM_CORE_INFO("Release KEY S.");
+                movement -= glm::vec3(0, 0, 1);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_D) {
+                VXM_CORE_INFO("Release KEY D.");
+                movement -= glm::vec3(1, 0, 0);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_A) {
+                VXM_CORE_INFO("Release KEY A.");
+                movement -= glm::vec3(-1, 0, 0);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_E) {
+                VXM_CORE_INFO("Release KEY E.");
+                movement -= glm::vec3(0, 1, 0);
+            }
+            if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_Q) {
+                VXM_CORE_INFO("Release KEY Q.");
+                movement -= glm::vec3(0, -1, 0);
+            }
+        }
+        if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_ESCAPE) {
+            VXM_CORE_INFO("Release KEY ESCAPE.");
+            movement = {0,0,0};
+        }
+        return false;
+    }
+
+    bool UpdateCameraRotation(Voxymore::Core::MouseMovedEvent& event) {
+        if(updateCamera) {
+            if (!hasSetMouse) {
+                mouseX = event.GetX();
+                mouseY = event.GetY();
+                hasSetMouse = true;
+                return false;
+            }
+            glm::vec2 currentPos = {event.GetX(), event.GetY()};
+            glm::vec2 olPos = {mouseX, mouseY};
+
+            glm::vec2 deltaMove = olPos - currentPos;
+
+            // old pos.
+            mouseX = event.GetX();
+            mouseY = event.GetY();
+
+            glm::quat rotation = m_Camera.GetRotation();
+            VXM_INFO("Mouse Delta: x:{0}, y: {1}", deltaMove.x, deltaMove.y);
+            glm::vec2 movement = glm::radians(glm::vec2(deltaMove.x, deltaMove.y)) * (sensitivity);
+            glm::vec3 right = glm::vec3{1, 0, 0};
+            glm::vec3 up = {0, 1, 0};
+            auto upwardRotation = glm::rotate(glm::identity<glm::quat>(), movement.y, right);
+            auto rightwardRotation = glm::rotate(glm::identity<glm::quat>(), movement.x, up);
+            rotation = rotation * upwardRotation; // Around the local right axis of the current rotation.
+            rotation = rightwardRotation * rotation; // Around the global up axis.
+            m_Camera.SetRotation(rotation);
+        }
+        return false;
+    }
+
+    virtual void OnUpdate() override {
+        float deltaTime = 1.0f/165.0f;
+        {
+            glm::vec3 position = m_Camera.GetPosition();
+            glm::quat rotation = m_Camera.GetRotation();
+            if (glm::length2(movement) != 0) {
+                position += glm::normalize(rotation * movement) * (speed * deltaTime);
+                m_Camera.SetPosition(position);
+            }
+        }
+
+        m_Camera.UpdateAllMatrix();
+        Voxymore::Core::Renderer::BeginScene(m_Camera);
+
+        Voxymore::Core::Renderer::Submit(m_Shader, m_VertexArray);
+
+        Voxymore::Core::Renderer::EndScene();
+    }
 
     virtual void OnImGuiRender() override {
 
         ImGui::Begin("Camera Component");
 
-		glm::vec3 position = m_Camera.GetPosition();
-		ImGui::InputFloat3("Camera Position", glm::value_ptr(position));
-		if(position != m_Camera.GetPosition()) {
-			m_Camera.SetPosition(position);
-		}
+        glm::vec3 position = m_Camera.GetPosition();
+        ImGui::DragFloat3("Camera Position", glm::value_ptr(position));
+        if(position != m_Camera.GetPosition()) {
+            m_Camera.SetPosition(position);
+        }
 
-		glm::quat rotation = m_Camera.GetRotation();
-		glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
-		ImGui::InputFloat3("Camera Rotation", glm::value_ptr(euler));
-		if(euler != glm::degrees(glm::eulerAngles(m_Camera.GetRotation()))) {
-			m_Camera.SetRotation(glm::quat(glm::radians(euler)));
-		}
+        glm::quat rotation = m_Camera.GetRotation();
+        glm::vec3 euler = glm::degrees(glm::eulerAngles(rotation));
+        ImGui::DragFloat3("Camera Rotation", glm::value_ptr(euler));
+        if(euler != glm::degrees(glm::eulerAngles(m_Camera.GetRotation()))) {
+            m_Camera.SetRotation(glm::quat(glm::radians(euler)));
+        }
 
-		float fov = m_Camera.GetFOV();
-		ImGui::SliderFloat("fov", &fov, 45.0f, 110.0f);
-		if(fov != m_Camera.GetFOV()){
-			m_Camera.SetFOV(fov);
-		}
+        float fov = m_Camera.GetFOV();
+        ImGui::SliderFloat("fov", &fov, 45.0f, 110.0f);
+        if(fov != m_Camera.GetFOV()){
+            m_Camera.SetFOV(fov);
+        }
 
+        ImGui::SliderFloat("sensitivity", &sensitivity, 0.01f, 2.0f);
+        ImGui::DragFloat("speed", &speed, 0.01f);
 
         ImGui::End();
     }
 
-	virtual void OnEvent(Voxymore::Core::Event& event) {
-		Voxymore::Core::EventDispatcher dispatcher(event);
-		dispatcher.Dispatch<Voxymore::Core::WindowResizeEvent>(BIND_EVENT_FN(ExampleLayer::UpdateCameraSize, std::placeholders::_1));
-	}
+    virtual void OnEvent(Voxymore::Core::Event& event) {
+        Voxymore::Core::EventDispatcher dispatcher(event);
+        dispatcher.Dispatch<Voxymore::Core::WindowResizeEvent>(BIND_EVENT_FN(ExampleLayer::UpdateCameraSize, std::placeholders::_1));
+        dispatcher.Dispatch<Voxymore::Core::KeyPressedEvent>(BIND_EVENT_FN(ExampleLayer::UpdateCameraPositionPressed, std::placeholders::_1));
+        dispatcher.Dispatch<Voxymore::Core::KeyReleasedEvent>(BIND_EVENT_FN(ExampleLayer::UpdateCameraPositionReleased, std::placeholders::_1));
+        dispatcher.Dispatch<Voxymore::Core::MouseMovedEvent>(BIND_EVENT_FN(ExampleLayer::UpdateCameraRotation, std::placeholders::_1));
+    }
 };
 
 class Sandbox : public Voxymore::Core::Application{
