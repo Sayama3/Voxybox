@@ -1,5 +1,6 @@
 #include "Voxymore/Voxymore.hpp"
 #include "Voxymore/Macros.hpp"
+#include "Voxymore/Core/TimeStep.hpp"
 #include <iostream>
 #include <imgui.h>
 
@@ -18,6 +19,9 @@ private:
     float sensitivity = 1.0f;
     float speed = 1.0f;
     glm::vec3 movement = {0,0,0};
+    glm::vec3 modelPos = {0,0,0};
+    glm::vec3 modelRot = {0,0,0};
+    glm::vec3 modelScale = {1,1,1};
 public:
     ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight(), 60.0f){
         Voxymore::Core::Application::Get().GetWindow().SetCursorState(updateCamera ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
@@ -61,13 +65,14 @@ public:
             layout(location = 2) in vec4 a_Color;
 
 			uniform mat4 u_ViewProjectionMatrix;
+			uniform mat4 u_Transform;
 
             out vec3 v_Position;
             out vec4 v_Color;
 
             void main() {
-                gl_Position = u_ViewProjectionMatrix * vec4(a_Position, 1.0);
-                v_Position = (u_ViewProjectionMatrix * vec4(a_Position, 1.0)).xyz;
+                gl_Position = u_ViewProjectionMatrix * u_Transform * vec4(a_Position, 1.0);
+                v_Position = (u_ViewProjectionMatrix * u_Transform * vec4(a_Position, 1.0)).xyz;
                 v_Color = a_Color;
             }
             )";
@@ -85,7 +90,6 @@ public:
             }
         )";
         m_Shader.reset(Voxymore::Core::Shader::CreateShader({vertexSrc, Voxymore::Core::ShaderType::VERTEX_SHADER}, {fragmentSrc, Voxymore::Core::ShaderType::FRAGMENT_SHADER}));
-
     }
 
     bool UpdateCameraSize(Voxymore::Core::WindowResizeEvent& event) {
@@ -196,13 +200,12 @@ public:
         return false;
     }
 
-    virtual void OnUpdate() override {
-        float deltaTime = 1.0f/165.0f;
+    virtual void OnUpdate(Voxymore::Core::TimeStep timeStep) override {
         {
             glm::vec3 position = m_Camera.GetPosition();
             glm::quat rotation = m_Camera.GetRotation();
             if (glm::length2(movement) != 0) {
-                position += glm::normalize(rotation * movement) * (speed * deltaTime);
+                position += glm::normalize(rotation * movement) * (speed * timeStep.GetSeconds());
                 m_Camera.SetPosition(position);
             }
         }
@@ -210,7 +213,7 @@ public:
         m_Camera.UpdateAllMatrix();
         Voxymore::Core::Renderer::BeginScene(m_Camera);
 
-        Voxymore::Core::Renderer::Submit(m_Shader, m_VertexArray);
+        Voxymore::Core::Renderer::Submit(m_Shader, m_VertexArray, Voxymore::Core::Math::TRS(modelPos, glm::quat(glm::radians(modelRot)), modelScale));
 
         Voxymore::Core::Renderer::EndScene();
     }
@@ -240,6 +243,17 @@ public:
 
         ImGui::SliderFloat("sensitivity", &sensitivity, 0.01f, 2.0f);
         ImGui::DragFloat("speed", &speed, 0.01f);
+
+        bool vsync = Voxymore::Core::Application::Get().GetWindow().IsVSync();
+        ImGui::Checkbox("VSync", &vsync);
+        Voxymore::Core::Application::Get().GetWindow().SetVSync(vsync);
+        ImGui::End();
+
+        ImGui::Begin("Model Component");
+
+        ImGui::DragFloat3("Position", glm::value_ptr(modelPos));
+        ImGui::DragFloat3("Rotation", glm::value_ptr(modelRot));
+        ImGui::DragFloat3("Scale", glm::value_ptr(modelScale));
 
         ImGui::End();
     }
