@@ -174,7 +174,7 @@ public:
             glm::vec2 currentPos = {event.GetX(), event.GetY()};
             glm::vec2 olPos = {mouseX, mouseY};
 
-            glm::vec2 deltaMove = olPos - currentPos;
+            glm::vec2 deltaMove = currentPos - olPos;
 
             // old pos.
             mouseX = event.GetX();
@@ -185,8 +185,8 @@ public:
             glm::vec2 movement = glm::radians(glm::vec2(deltaMove.x, deltaMove.y)) * (sensitivity);
             glm::vec3 right = glm::vec3{1, 0, 0};
             glm::vec3 up = {0, 1, 0};
-            auto upwardRotation = glm::rotate(glm::identity<glm::quat>(), movement.y, right);
-            auto rightwardRotation = glm::rotate(glm::identity<glm::quat>(), movement.x, up);
+            auto upwardRotation = glm::rotate(glm::identity<glm::quat>(), -movement.y, right); // Inverse because that's the way it works.
+            auto rightwardRotation = glm::rotate(glm::identity<glm::quat>(), -movement.x, up); // Inverse because that's the way it works.
             rotation = rotation * upwardRotation; // Around the local right axis of the current rotation.
             rotation = rightwardRotation * rotation; // Around the global up axis.
             m_Camera.SetRotation(rotation);
