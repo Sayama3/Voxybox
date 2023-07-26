@@ -19,27 +19,29 @@ private:
     float sensitivity = 1.0f;
     float speed = 1.0f;
     glm::vec3 movement = {0,0,0};
-    glm::vec3 modelPos = {0,0,0};
+    glm::vec3 modelPos = {0,0,-1};
     glm::vec3 modelRot = {0,0,0};
     glm::vec3 modelScale = {1,1,1};
 public:
-    ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight(), 60.0f){
+    ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight(), 60.0f)
+    {
         Voxymore::Core::Application::Get().GetWindow().SetCursorState(updateCamera ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
         const Voxymore::Core::Window& window = Voxymore::Core::Application::Get().GetWindow();
         m_Camera.SetSize(window.GetWidth(), window.GetHeight());
+        m_Camera.SetRotation(glm::quatLookAt(glm::vec3{0,0,-1}, glm::vec3{0,1,0}));
+        m_Camera.UpdateAllMatrix();
 
 
         m_VertexArray.reset(Voxymore::Core::VertexArray::Create());
 
-        float vertices [(3 * 3) + (3 * 3) + (3 * 4)] = {
-                -0.5f, -0.5f, 0.0f,    -0.5f, -0.5f, -0.5f,    -0.5f, -0.5f, -0.5f, 1.0f,
-                0.0f, 0.5f, 0.0f,       0.0f, 0.5f, 0.0f,       0.0f, 0.5f, 0.0f, 1.0f,
-                0.5f, -0.5f, 0.0f,      0.5f, -0.5f, 0.5f,      0.5f, -0.5f, 0.5f, 1.0f,
+        float vertices [(3 * 3) + (3 * 4)] = {
+                -0.5f, -0.5f, 0.0f,     0.8, 0.2f, 0.3f, 1.0f,
+                0.5f, -0.5f, 0.0f,      0.2f, 0.3f, 0.8f, 1.0f,
+                0.0f, 0.5f, 0.0f,       0.3f, 0.8f, 0.2f, 1.0f,
         };
         m_VertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(vertices), vertices));
         Voxymore::Core::BufferLayout layout = {
                 {Voxymore::Core::ShaderDataType::Float3, "a_Position"},
-                {Voxymore::Core::ShaderDataType::Float3, "a_Normal"},
                 {Voxymore::Core::ShaderDataType::Float4, "a_Color"},
         };
         m_VertexBuffer->SetLayout(layout);
@@ -49,8 +51,8 @@ public:
 
         uint32_t index[3] = {
                 0,
-                2,
                 1,
+                2,
         };
 
         m_IndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(index), index));
@@ -61,8 +63,7 @@ public:
             #version 330 core
 
             layout(location = 0) in vec3 a_Position;
-            layout(location = 1) in vec3 a_Normal;
-            layout(location = 2) in vec4 a_Color;
+            layout(location = 1) in vec4 a_Color;
 
 			uniform mat4 u_ViewProjectionMatrix;
 			uniform mat4 u_Transform;
@@ -89,7 +90,7 @@ public:
                 o_Color = v_Color;
             }
         )";
-        m_Shader.reset(Voxymore::Core::Shader::CreateShader({vertexSrc, Voxymore::Core::ShaderType::VERTEX_SHADER}, {fragmentSrc, Voxymore::Core::ShaderType::FRAGMENT_SHADER}));
+        m_Shader.reset(Voxymore::Core::Shader::Create(vertexSrc, fragmentSrc));
     }
 
     bool UpdateCameraSize(Voxymore::Core::WindowResizeEvent& event) {
