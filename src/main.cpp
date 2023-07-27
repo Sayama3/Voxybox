@@ -1,15 +1,16 @@
 #include "Voxymore/Voxymore.hpp"
 #include "Voxymore/Macros.hpp"
 #include "Voxymore/Core/TimeStep.hpp"
+#include "Voxymore/Core/SmartPointers.hpp"
 #include <iostream>
 #include <imgui.h>
 
 class ExampleLayer : public Voxymore::Core::Layer {
 private:
-    std::shared_ptr<Voxymore::Core::Shader> m_Shader;
-    std::shared_ptr<Voxymore::Core::VertexArray> m_VertexArray;
-    std::shared_ptr<Voxymore::Core::VertexBuffer> m_VertexBuffer;
-    std::shared_ptr<Voxymore::Core::IndexBuffer> m_IndexBuffer;
+    Voxymore::Core::Ref<Voxymore::Core::Shader> m_Shader;
+    Voxymore::Core::Ref<Voxymore::Core::VertexArray> m_VertexArray;
+    Voxymore::Core::Ref<Voxymore::Core::VertexBuffer> m_VertexBuffer;
+    Voxymore::Core::Ref<Voxymore::Core::IndexBuffer> m_IndexBuffer;
 
     Voxymore::Core::PerspectiveCamera m_Camera;
 private:
