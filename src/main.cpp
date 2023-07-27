@@ -20,7 +20,7 @@ private:
     float sensitivity = 1.0f;
     float speed = 1.0f;
     glm::vec3 movement = {0,0,0};
-    glm::vec3 modelPos = {0,0,-1};
+    glm::vec3 modelPos = {0,0,-2};
     glm::vec3 modelRot = {0,0,0};
     glm::vec3 modelScale = {1,1,1};
 public:
@@ -35,12 +35,18 @@ public:
 
         m_VertexArray.reset(Voxymore::Core::VertexArray::Create());
 
-        float vertices [(3 * 3) + (3 * 4)] = {
-                -0.5f, -0.5f, 0.0f,     0.8, 0.2f, 0.3f, 1.0f,
-                0.5f, -0.5f, 0.0f,      0.2f, 0.3f, 0.8f, 1.0f,
-                0.0f, 0.5f, 0.0f,       0.3f, 0.8f, 0.2f, 1.0f,
+        float cubeVertices [(8 * 3) + (8 * 4)] = {
+                -0.5f, -0.5f, +0.5f,   0.8f, 0.1f, 0.7f, 1.0f,
+                +0.5f, -0.5f, +0.5f,   0.1f, 0.7f, 0.8f, 1.0f,
+                +0.5f, +0.5f, +0.5f,   0.8f, 0.8f, 0.8f, 1.0f,
+                -0.5f, +0.5f, +0.5f,   0.1f, 0.1f, 0.1f, 1.0f,
+
+                -0.5f, -0.5f, -0.5f,   0.8, 0.2f, 0.3f, 1.0f,
+                +0.5f, -0.5f, -0.5f,   0.2f, 0.3f, 0.8f, 1.0f,
+                +0.5f, +0.5f, -0.5f,   0.3f, 0.8f, 0.2f, 1.0f,
+                -0.5f, +0.5f, -0.5f,   0.7f, 0.8f, 0.1f, 1.0f,
         };
-        m_VertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(vertices), vertices));
+        m_VertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(cubeVertices), cubeVertices));
         Voxymore::Core::BufferLayout layout = {
                 {Voxymore::Core::ShaderDataType::Float3, "a_Position"},
                 {Voxymore::Core::ShaderDataType::Float4, "a_Color"},
@@ -50,13 +56,37 @@ public:
 
         m_VertexArray->AddVertexBuffer(m_VertexBuffer);
 
-        uint32_t index[3] = {
-                0,
-                1,
-                2,
+//        uint32_t cubeIndices[2 * 3 * 6] = {
+//                0,1,2,
+//                0,2,3,
+//                1,5,6,
+//                1,6,2,
+//                5,4,7,
+//                5,7,6,
+//                4,0,3,
+//                4,3,7,
+//                4,5,1,
+//                4,1,0,
+//                3,2,6,
+//                3,6,7,
+//        };
+
+        uint32_t cubeIndices[2 * 3 * 6] = {
+                0,3,2,
+                0,2,1,
+                1,2,6,
+                1,6,5,
+                5,6,7,
+                5,7,4,
+                4,7,3,
+                4,3,0,
+                3,7,6,
+                3,6,2,
+                4,0,1,
+                4,1,5,
         };
 
-        m_IndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(index), index));
+        m_IndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(cubeIndices), cubeIndices));
 
         m_VertexArray->SetIndexBuffer(m_IndexBuffer);
 
