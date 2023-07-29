@@ -1,16 +1,26 @@
+#define NEWLINE "\n"
+
 #include "Voxymore/Voxymore.hpp"
 #include "Voxymore/Macros.hpp"
 #include "Voxymore/Core/TimeStep.hpp"
 #include "Voxymore/Core/SmartPointers.hpp"
+#include "../lib/VoxymoreCore/platform/OpenGL/Voxymore/OpenGL/OpenGLShader.hpp"
 #include <iostream>
 #include <imgui.h>
 
 class ExampleLayer : public Voxymore::Core::Layer {
 private:
     Voxymore::Core::Ref<Voxymore::Core::Shader> m_Shader;
+    Voxymore::Core::Ref<Voxymore::Core::Shader> m_TextureShader;
+    Voxymore::Core::Ref<Voxymore::Core::Texture2D> m_Texture;
+
     Voxymore::Core::Ref<Voxymore::Core::VertexArray> m_VertexArray;
     Voxymore::Core::Ref<Voxymore::Core::VertexBuffer> m_VertexBuffer;
     Voxymore::Core::Ref<Voxymore::Core::IndexBuffer> m_IndexBuffer;
+
+    Voxymore::Core::Ref<Voxymore::Core::VertexArray> m_SquareVertexArray;
+    Voxymore::Core::Ref<Voxymore::Core::VertexBuffer> m_SquareVertexBuffer;
+    Voxymore::Core::Ref<Voxymore::Core::IndexBuffer> m_SquareIndexBuffer;
 
     Voxymore::Core::PerspectiveCamera m_Camera;
 private:
@@ -24,7 +34,7 @@ private:
     glm::vec3 modelRot = {0,0,0};
     glm::vec3 modelScale = {1,1,1};
 public:
-    ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight(), 60.0f)
+    ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight(), 60.0f, 0.01f, 1000.0f, {0,0,1})
     {
         Voxymore::Core::Application::Get().GetWindow().SetCursorState(updateCamera ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
         const Voxymore::Core::Window& window = Voxymore::Core::Application::Get().GetWindow();
@@ -56,20 +66,6 @@ public:
 
         m_VertexArray->AddVertexBuffer(m_VertexBuffer);
 
-//        uint32_t cubeIndices[2 * 3 * 6] = {
-//                0,1,2,
-//                0,2,3,
-//                1,5,6,
-//                1,6,2,
-//                5,4,7,
-//                5,7,6,
-//                4,0,3,
-//                4,3,7,
-//                4,5,1,
-//                4,1,0,
-//                3,2,6,
-//                3,6,7,
-//        };
 
         uint32_t cubeIndices[2 * 3 * 6] = {
                 0,3,2,
@@ -90,38 +86,36 @@ public:
 
         m_VertexArray->SetIndexBuffer(m_IndexBuffer);
 
-        std::string vertexSrc = R"(
-            #version 330 core
+        m_SquareVertexArray.reset(Voxymore::Core::VertexArray::Create());
+        float squareVertices[5 * 4] = {
+                -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+                0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+                0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+                -0.5f,  0.5f, 0.0f, 0.0f, 1.0f
+        };
+        m_SquareVertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(squareVertices), squareVertices));
+        Voxymore::Core::BufferLayout squareLayout = {
+                {Voxymore::Core::ShaderDataType::Float3, "a_Position"},
+                {Voxymore::Core::ShaderDataType::Float2, "a_TexCoord"},
+        };
+        m_SquareVertexBuffer->SetLayout(squareLayout);
+        m_SquareVertexArray->AddVertexBuffer(m_SquareVertexBuffer);
+        uint32_t squareIndices[6] = { 0, 1, 2, 2, 3, 0 };
+        m_SquareIndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(squareIndices), squareIndices));
+        m_SquareVertexArray->SetIndexBuffer(m_SquareIndexBuffer);
 
-            layout(location = 0) in vec3 a_Position;
-            layout(location = 1) in vec4 a_Color;
+        VXM_INFO("Creat FlatColor Shader");
+        m_Shader.reset(Voxymore::Core::Shader::Create({
+                "assets/shaders/FlatColor_Frag.glsl",
+                "assets/shaders/FlatColor_Vert.glsl"
+        }));
+        VXM_INFO("Creat Texture Shader");
+        m_TextureShader.reset(Voxymore::Core::Shader::Create({"assets/shaders/TextureShader.glsl"}));
 
-			uniform mat4 u_ViewProjectionMatrix;
-			uniform mat4 u_Transform;
-
-            out vec3 v_Position;
-            out vec4 v_Color;
-
-            void main() {
-                gl_Position = u_ViewProjectionMatrix * u_Transform * vec4(a_Position, 1.0);
-                v_Position = (u_ViewProjectionMatrix * u_Transform * vec4(a_Position, 1.0)).xyz;
-                v_Color = a_Color;
-            }
-            )";
-
-        std::string fragmentSrc = R"(
-            #version 330 core
-
-            layout(location = 0) out vec4 o_Color;
-
-            in vec3 v_Position;
-            in vec4 v_Color;
-
-            void main() {
-                o_Color = v_Color;
-            }
-        )";
-        m_Shader.reset(Voxymore::Core::Shader::Create(vertexSrc, fragmentSrc));
+        m_Texture = Voxymore::Core::Texture2D::Create("assets/textures/texture_checker.png");
+        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->Bind();
+        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->SetUniformInt("u_Texture", 0);
+        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->Unbind();
     }
 
     bool UpdateCameraSize(Voxymore::Core::WindowResizeEvent& event) {
@@ -244,7 +238,8 @@ public:
 
         m_Camera.UpdateAllMatrix();
         Voxymore::Core::Renderer::BeginScene(m_Camera);
-
+        m_Texture->Bind();
+        Voxymore::Core::Renderer::Submit(m_TextureShader, m_SquareVertexArray);
         Voxymore::Core::Renderer::Submit(m_Shader, m_VertexArray, Voxymore::Core::Math::TRS(modelPos, glm::quat(glm::radians(modelRot)), modelScale));
 
         Voxymore::Core::Renderer::EndScene();
