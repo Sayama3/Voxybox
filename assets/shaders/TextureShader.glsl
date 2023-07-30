@@ -1,4 +1,4 @@
-#define  __TYPE_VERTEX_SHADER__
+#define __TYPE_VERTEX_SHADER__
 #version 330 core
 
 layout(location = 0) in vec3 a_Position;
@@ -17,7 +17,7 @@ void main() {
     v_TexCoord = a_TexCoord;
 }
 
-#define  __TYPE_FRAGMENT_SHADER__
+#define __TYPE_FRAGMENT_SHADER__
 #version 330 core
 
 layout(location = 0) out vec4 o_Color;

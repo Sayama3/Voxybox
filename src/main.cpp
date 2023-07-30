@@ -105,12 +105,9 @@ public:
         m_SquareVertexArray->SetIndexBuffer(m_SquareIndexBuffer);
 
         VXM_INFO("Creat FlatColor Shader");
-        m_Shader.reset(Voxymore::Core::Shader::Create({
-                "assets/shaders/FlatColor_Frag.glsl",
-                "assets/shaders/FlatColor_Vert.glsl"
-        }));
+        m_Shader = Voxymore::Core::Shader::Create("assets/shaders/FlatColor.glsl");
         VXM_INFO("Creat Texture Shader");
-        m_TextureShader.reset(Voxymore::Core::Shader::Create({"assets/shaders/TextureShader.glsl"}));
+        m_TextureShader = Voxymore::Core::Shader::Create("assets/shaders/TextureShader.glsl");
 
         m_Texture = Voxymore::Core::Texture2D::Create("assets/textures/texture_checker.png");
         std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->Bind();
