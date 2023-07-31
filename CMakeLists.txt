@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.24)
 
 # set enable the debugger (when the debug mode is enable?)
-set(CMAKE_CXX_FLAGS_DEBUG_INIT "-g")
+if(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
+    set(CMAKE_CXX_FLAGS_DEBUG_INIT "-g")
+endif()
 
 
 set(VoxymoreCore_SHARED_BUILD ON)
