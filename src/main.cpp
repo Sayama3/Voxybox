@@ -1,9 +1,9 @@
 #define NEWLINE "\n"
 
 #include "Voxymore/Voxymore.hpp"
-#include "Voxymore/Macros.hpp"
+#include "Voxymore/Core/Macros.hpp"
 #include "Voxymore/Core/TimeStep.hpp"
-#include "Voxymore/PerspectiveCameraController.hpp"
+#include "Voxymore/Core/PerspectiveCameraController.hpp"
 #include "Voxymore/Core/SmartPointers.hpp"
 #include "../lib/VoxymoreCore/platform/OpenGL/Voxymore/OpenGL/OpenGLShader.hpp"
 #include <iostream>
