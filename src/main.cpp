@@ -2,12 +2,10 @@
 
 #include "Voxymore/Voxymore.hpp"
 #include "Voxymore/Core/Macros.hpp"
+#include "Voxymore/Debug/Instrumentor.hpp"
 #include "Voxymore/Core/TimeStep.hpp"
 #include "Voxymore/Core/PerspectiveCameraController.hpp"
 #include "Voxymore/Core/SmartPointers.hpp"
-#include "../lib/VoxymoreCore/platform/OpenGL/Voxymore/OpenGL/OpenGLShader.hpp"
-#include <iostream>
-#include <imgui.h>
 
 class ExampleLayer : public Voxymore::Core::Layer {
 private:
@@ -31,7 +29,8 @@ private:
 public:
     ExampleLayer() : Voxymore::Core::Layer("ExampleLayer"), m_Camera(Voxymore::Core::Application::Get().GetWindow().GetWidth(), Voxymore::Core::Application::Get().GetWindow().GetHeight())
     {
-        Voxymore::Core::Application::Get().GetWindow().SetCursorState(m_Camera.GetEnable() ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
+        VXM_PROFILE_FUNCTION();
+        Voxymore::Core::Application::Get().GetWindow().SetCursorState(m_Camera.IsEnable() ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
         const Voxymore::Core::Window& window = Voxymore::Core::Application::Get().GetWindow();
 
 
@@ -102,22 +101,25 @@ public:
         m_TextureShader = Voxymore::Core::Shader::Create("assets/shaders/TextureShader.glsl");
 
         m_Texture = Voxymore::Core::Texture2D::Create("assets/textures/texture_checker.png");
-        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->Bind();
-        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->SetUniformInt("u_Texture", 0);
-        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->Unbind();
+//        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->Bind();
+//        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->SetUniformInt("u_Texture", 0);
+//        std::dynamic_pointer_cast<Voxymore::Core::OpenGLShader>(m_TextureShader)->Unbind();
     }
 
 
     bool UpdateCameraPositionPressed(Voxymore::Core::KeyPressedEvent& event) {
+        VXM_PROFILE_FUNCTION();
         if (event.GetKeyCode() == Voxymore::Core::KeyCode::KEY_ESCAPE && event.GetRepeatCount() == 0) {
             VXM_CORE_INFO("Press KEY ESCAPE.");
-            m_Camera.SetEnable(!m_Camera.GetEnable());
-            Voxymore::Core::Application::Get().GetWindow().SetCursorState(m_Camera.GetEnable() ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
+            m_Camera.SetEnable(!m_Camera.IsEnable());
+            Voxymore::Core::Application::Get().GetWindow().SetCursorState(m_Camera.IsEnable() ? Voxymore::Core::CursorState::Locked : Voxymore::Core::CursorState::None);
         }
         return false;
     }
 
     virtual void OnUpdate(Voxymore::Core::TimeStep timeStep) override {
+        VXM_PROFILE_FUNCTION();
+
         m_Camera.OnUpdate(timeStep);
 
 
@@ -131,6 +133,7 @@ public:
     }
 
     virtual void OnImGuiRender() override {
+        VXM_PROFILE_FUNCTION();
 //        ImGui::Begin("Camera Component");
 //
 //        glm::vec3 position = m_Camera.GetPosition();
@@ -160,16 +163,20 @@ public:
 //        Voxymore::Core::Application::Get().GetWindow().SetVSync(vsync);
 //        ImGui::End();
 
-        ImGui::Begin("Model Component");
+        {
+            VXM_PROFILE_SCOPE("ExampleLayer::OnImGuiRender -> Model Component drawing");
+            ImGui::Begin("Model Component");
 
-        ImGui::DragFloat3("Position", glm::value_ptr(modelPos));
-        ImGui::DragFloat3("Rotation", glm::value_ptr(modelRot));
-        ImGui::DragFloat3("Scale", glm::value_ptr(modelScale));
+            ImGui::DragFloat3("Position", glm::value_ptr(modelPos));
+            ImGui::DragFloat3("Rotation", glm::value_ptr(modelRot));
+            ImGui::DragFloat3("Scale", glm::value_ptr(modelScale));
 
-        ImGui::End();
+            ImGui::End();
+        }
     }
 
-    virtual void OnEvent(Voxymore::Core::Event& event) {
+    virtual void OnEvent(Voxymore::Core::Event& event) override {
+        VXM_PROFILE_FUNCTION();
         m_Camera.OnEvent(event);
 
         Voxymore::Core::EventDispatcher dispatcher(event);
@@ -186,7 +193,15 @@ public:
     inline ~Sandbox(){}
 };
 
-Voxymore::Core::Application* Voxymore::Core::CreateApplication() {
-    VXM_INFO("Create Application");
+Voxymore::Core::Application* Voxymore::Core::CreateApplication(int argc, char** argv) {
+    VXM_PROFILE_FUNCTION();
+
+#if VXM_DEBUG
+    VXM_TRACE("Create Application with argument :");
+    for (int i = 0; i < argc; ++i) {
+        VXM_TRACE("  i: {0}", argv[i]);
+    }
+#endif
+
     return new Sandbox();
 }
