@@ -258,7 +258,7 @@ public:
             uint32_t texID = m_Framebuffer->GetColorAttachmentRendererID();
             static float scale = 1.0f;
             ImGui::SliderFloat("ImageScale", &scale, 0.0f, 1.0f);
-            ImGui::Image((void*)texID, ImVec2(m_Framebuffer->GetSpecification().Width * scale, m_Framebuffer->GetSpecification().Height * scale));
+            ImGui::Image((void*)texID, ImVec2(m_Framebuffer->GetSpecification().Width * scale, m_Framebuffer->GetSpecification().Height * scale), ImVec2{ 0,1 }, ImVec2{1,0});
             ImGui::End();
         }
 
