@@ -6,6 +6,7 @@
 #include "Voxymore/Core/TimeStep.hpp"
 #include "Voxymore/Core/PerspectiveCameraController.hpp"
 #include "Voxymore/Core/SmartPointers.hpp"
+#include "Voxymore/Renderer/Framebuffer.hpp"
 
 class ExampleLayer : public Voxymore::Core::Layer {
 private:
@@ -21,6 +22,8 @@ private:
     Voxymore::Core::Ref<Voxymore::Core::VertexBuffer> m_SquareVertexBuffer;
     Voxymore::Core::Ref<Voxymore::Core::IndexBuffer> m_SquareIndexBuffer;
 
+    Voxymore::Core::Ref<Voxymore::Core::Framebuffer> m_Framebuffer;
+
     Voxymore::Core::PerspectiveCameraController m_Camera;
 private:
     glm::vec3 modelPos = {0,0,-2};
@@ -34,7 +37,7 @@ public:
         const Voxymore::Core::Window& window = Voxymore::Core::Application::Get().GetWindow();
 
 
-        m_VertexArray.reset(Voxymore::Core::VertexArray::Create());
+        m_VertexArray = Voxymore::Core::VertexArray::Create();
 
         float cubeVertices [(8 * 3) + (8 * 4)] = {
                 -0.5f, -0.5f, +0.5f,   0.8f, 0.1f, 0.7f, 1.0f,
@@ -47,7 +50,7 @@ public:
                 +0.5f, +0.5f, -0.5f,   0.3f, 0.8f, 0.2f, 1.0f,
                 -0.5f, +0.5f, -0.5f,   0.7f, 0.8f, 0.1f, 1.0f,
         };
-        m_VertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(cubeVertices), cubeVertices));
+        m_VertexBuffer = Voxymore::Core::VertexBuffer::Create(sizeof(cubeVertices), cubeVertices);
         Voxymore::Core::BufferLayout layout = {
                 {Voxymore::Core::ShaderDataType::Float3, "a_Position"},
                 {Voxymore::Core::ShaderDataType::Float4, "a_Color"},
@@ -73,18 +76,18 @@ public:
                 3,6,7,
         };
 
-        m_IndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(cubeIndices), cubeIndices));
+        m_IndexBuffer = Voxymore::Core::IndexBuffer::Create(std::size(cubeIndices), cubeIndices);
 
         m_VertexArray->SetIndexBuffer(m_IndexBuffer);
 
-        m_SquareVertexArray.reset(Voxymore::Core::VertexArray::Create());
+        m_SquareVertexArray = Voxymore::Core::VertexArray::Create();
         float squareVertices[5 * 4] = {
                 -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
                 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
                 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
                 -0.5f,  0.5f, 0.0f, 0.0f, 1.0f
         };
-        m_SquareVertexBuffer.reset(Voxymore::Core::VertexBuffer::Create(sizeof(squareVertices), squareVertices));
+        m_SquareVertexBuffer = Voxymore::Core::VertexBuffer::Create(sizeof(squareVertices), squareVertices);
         Voxymore::Core::BufferLayout squareLayout = {
                 {Voxymore::Core::ShaderDataType::Float3, "a_Position"},
                 {Voxymore::Core::ShaderDataType::Float2, "a_TexCoord"},
@@ -92,7 +95,7 @@ public:
         m_SquareVertexBuffer->SetLayout(squareLayout);
         m_SquareVertexArray->AddVertexBuffer(m_SquareVertexBuffer);
         uint32_t squareIndices[6] = { 0, 1, 2, 2, 3, 0 };
-        m_SquareIndexBuffer.reset(Voxymore::Core::IndexBuffer::Create(std::size(squareIndices), squareIndices));
+        m_SquareIndexBuffer = Voxymore::Core::IndexBuffer::Create(std::size(squareIndices), squareIndices);
         m_SquareVertexArray->SetIndexBuffer(m_SquareIndexBuffer);
 
         VXM_INFO("Creat FlatColor Shader");
@@ -122,14 +125,24 @@ public:
 
         m_Camera.OnUpdate(timeStep);
 
+        {
+            VXM_PROFILE_SCOPE("Rendering Preparation.");
+            m_Framebuffer->Bind();
+            Voxymore::Core::RenderCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1});
+            Voxymore::Core::RenderCommand::Clear();
+        }
 
-        Voxymore::Core::Renderer::BeginScene(m_Camera.GetCamera());
+        {
+            VXM_PROFILE_SCOPE("Rendering Scene");
+            Voxymore::Core::Renderer::BeginScene(m_Camera.GetCamera());
 
-        m_Texture->Bind();
-        Voxymore::Core::Renderer::Submit(m_TextureShader, m_SquareVertexArray);
-        Voxymore::Core::Renderer::Submit(m_Shader, m_VertexArray, Voxymore::Core::Math::TRS(modelPos, glm::quat(glm::radians(modelRot)), modelScale));
+            m_Texture->Bind();
+            Voxymore::Core::Renderer::Submit(m_TextureShader, m_SquareVertexArray);
+            Voxymore::Core::Renderer::Submit(m_Shader, m_VertexArray, Voxymore::Core::Math::TRS(modelPos, glm::quat(glm::radians(modelRot)), modelScale));
 
-        Voxymore::Core::Renderer::EndScene();
+            Voxymore::Core::Renderer::EndScene();
+            m_Framebuffer->Unbind();
+        }
     }
 
     virtual void OnImGuiRender() override {
@@ -151,7 +164,7 @@ public:
             // - (4) we have a local menu bar in the host window (vs. you could use BeginMainMenuBar() + DockSpaceOverViewport()
             //      in your code, but we don't here because we allow the window to be floating)
 
-            static bool dockspaceOpen = true;
+            static bool dockspaceOpen = false;
             static bool opt_fullscreen = true;
             static bool opt_padding = false;
             static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
@@ -239,6 +252,16 @@ public:
             ImGui::End();
         }
 
+        {
+            VXM_PROFILE_SCOPE("ExampleLayer::OnImGuiRender -> Rendering");
+            ImGui::Begin("Rendering");
+            uint32_t texID = m_Framebuffer->GetColorAttachmentRendererID();
+            static float scale = 1.0f;
+            ImGui::SliderFloat("ImageScale", &scale, 0.0f, 1.0f);
+            ImGui::Image((void*)texID, ImVec2(m_Framebuffer->GetSpecification().Width * scale, m_Framebuffer->GetSpecification().Height * scale));
+            ImGui::End();
+        }
+
     }
 
     virtual void OnEvent(Voxymore::Core::Event& event) override {
@@ -247,6 +270,16 @@ public:
 
         Voxymore::Core::EventDispatcher dispatcher(event);
         dispatcher.Dispatch<Voxymore::Core::KeyPressedEvent>(BIND_EVENT_FN(ExampleLayer::UpdateCameraPositionPressed, std::placeholders::_1));
+    }
+
+    virtual void OnAttach() override {
+        VXM_PROFILE_FUNCTION();
+        Voxymore::Core::FramebufferSpecification specification(1280, 720);
+        m_Framebuffer = Voxymore::Core::Framebuffer::Create(specification);
+    }
+    virtual void OnDetach() override {
+        VXM_PROFILE_FUNCTION();
+
     }
 };
 
